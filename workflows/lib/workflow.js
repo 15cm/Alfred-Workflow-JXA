@@ -29,7 +29,7 @@ function WorkFlow(workflowName){
 }
 WorkFlow.prototype._addItem = function(item){
     this.items.push(item);
-}
+};
 WorkFlow.prototype._itemToNSXMLElement = function (item){
     var oXMLElement = $.NSXMLElement.alloc.initWithName('item');
     for(var key in item.attr){
@@ -43,21 +43,21 @@ WorkFlow.prototype._itemToNSXMLElement = function (item){
         }
     }
     return oXMLElement;
-}
+};
 WorkFlow.prototype.filter = function(pattern){
     for(item of this.cacheItems){
         if(pattern.test(item.attr.autocomplete)){
             this._addItem(item);
         }
     }
-}
+};
 WorkFlow.prototype.alfredXML = function(){
     var oXMLDoc = $.NSXMLDocument.alloc.initWithXMLStringOptionsError("<items></items>",0,null);
     for(var item of this.items){
         oXMLDoc.rootElement.addChild(this._itemToNSXMLElement(item));
     }
     return ObjC.unwrap(oXMLDoc.XMLStringWithOptions(0));
-}
+};
 WorkFlow.prototype._cacheAge = function (){
      // current time - create time;
     var oFileManager = $.NSFileManager.defaultManager;
@@ -65,7 +65,7 @@ WorkFlow.prototype._cacheAge = function (){
     var oFileAttrs = $.NSFileManager.defaultManager.attributesOfItemAtPathError(this.cachePath,null);
     var oCreateDate = oFileAttrs.objectForKey(ObjC.unwrap($.NSFileCreationDate));
     return ( ( new Date().getTime()) - ObjC.unwrap(oCreateDate).getTime() ) / 1000;
-}
+};
 WorkFlow.prototype._cacheFetch = function(){
 	var oFileHandle = $.NSFileHandle.fileHandleForReadingAtPath(this.cachePath);
     var data = oFileHandle.readDataToEndOfFile;
@@ -76,47 +76,20 @@ WorkFlow.prototype._cacheFetch = function(){
         itemList.push(new Item(item.attr,item.ele));
     }
     return itemList;
-}
+};
 WorkFlow.prototype._cacheStore = function (cacheItems){
     var oFileManager = $.NSFileManager.defaultManager;
     var jsonStr = JSON.stringify(cacheItems);
     oFileManager.createFileAtPathContentsAttributes(this.cachePath,ObjC.wrap(jsonStr).dataUsingEncoding($.NSUTF8StringEncoding),$.NSDictionary.alloc.init);
-}
+};
 WorkFlow.prototype.cacheData = function(funcGenItemList,maxAge){
-    console.log(this._cacheAge());
     if(this._cacheAge() <= maxAge){
         this.cacheItems = this._cacheFetch();
     }else{
         this.cacheItems = funcGenItemList();
         this._cacheStore(this.cacheItems);
     }
-}
+};
 
-// Finder Services
-function genList(){
-    var itemList = [];
-    var se = Application('System Events');
-    var finder = se.processes.byName('Finder');
-    var finderMenu = finder.menuBars[0].menuBarItems.byName('Finder');
-    var serviceList = finderMenu.menus[0].menuItems.byName('Services').menus[0].menuItems();
-
-    for(var i in serviceList){
-        var mItem = serviceList[i];
-        if(mItem.enabled())
-            itemList.push(new Item({
-                uid: i,
-                arg: i,
-                autocomplete: mItem.title()
-            },{
-                title: mItem.title()
-            }));
-    };
-	return itemList;
-}
-
-var workflow = new WorkFlow('FinderService');
-var query = "{query}";
-var regexp = new RegExp(query + '.*','i');
-workflow.cacheData(genList,30);
-workflow.filter(regexp);
-workflow.alfredXML();
+exports.WorkFlow = WorkFlow;
+exports.Item = Item;
