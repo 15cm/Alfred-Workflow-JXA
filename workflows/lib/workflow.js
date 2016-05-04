@@ -13,12 +13,15 @@ function Item({
     this.attr = {
         uid,
         arg,
-        autocomplete
+        autocomplete,
+        valid,
+        type
     };
     this.ele = {
         title,
         subtitle,
-        icon
+        icon,
+        text
     };
 }
 function WorkFlow(workflowName){
